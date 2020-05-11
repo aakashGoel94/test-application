@@ -2,7 +2,7 @@
 #include<stdlib.h>
 #include<stdio.h>
 #include<errno.h>
-
+#include<string.h>
 // int main()
 // {
 // 	
@@ -29,9 +29,10 @@
 // 	printf("Hello World! \n");
 // }
 
+int verify_knownhost(ssh_session session);
 int scp_write(ssh_session session);
 int scp_read(ssh_session session);
-
+int scp_helloworld(ssh_session session, ssh_scp scp);
 
 int main()
 {
@@ -82,7 +83,7 @@ int main()
   }
   
   scp_write(my_ssh_session);
-  
+  scp_read(my_ssh_session);
 
   ssh_disconnect(my_ssh_session);
   ssh_free(my_ssh_session);
@@ -177,57 +178,57 @@ int verify_knownhost(ssh_session session)
     return 0;
 }
 
-int show_remote_processes(ssh_session session)
-{
-  ssh_channel channel;
-  int rc;
-  char buffer[256];
-  int nbytes;
+// int show_remote_processes(ssh_session session)
+// {
+//   ssh_channel channel;
+//   int rc;
+//   char buffer[256];
+//   int nbytes;
  
-  channel = ssh_channel_new(session);
-  if (channel == NULL)
-    return SSH_ERROR;
+//   channel = ssh_channel_new(session);
+//   if (channel == NULL)
+//     return SSH_ERROR;
  
-  rc = ssh_channel_open_session(channel);
-  if (rc != SSH_OK)
-  {
-    ssh_channel_free(channel);
-    return rc;
-  }
+//   rc = ssh_channel_open_session(channel);
+//   if (rc != SSH_OK)
+//   {
+//     ssh_channel_free(channel);
+//     return rc;
+//   }
  
-  rc = ssh_channel_request_exec(channel, "ps aux");
-  if (rc != SSH_OK)
-  {
-    ssh_channel_close(channel);
-    ssh_channel_free(channel);
-    return rc;
-  }
+//   rc = ssh_channel_request_exec(channel, "ps aux");
+//   if (rc != SSH_OK)
+//   {
+//     ssh_channel_close(channel);
+//     ssh_channel_free(channel);
+//     return rc;
+//   }
  
-  nbytes = ssh_channel_read(channel, buffer, sizeof(buffer), 0);
-  while (nbytes > 0)
-  {
-    if (write(1, buffer, nbytes) != (unsigned int) nbytes)
-    {
-      ssh_channel_close(channel);
-      ssh_channel_free(channel);
-      return SSH_ERROR;
-    }
-    nbytes = ssh_channel_read(channel, buffer, sizeof(buffer), 0);
-  }
+//   nbytes = ssh_channel_read(channel, buffer, sizeof(buffer), 0);
+//   while (nbytes > 0)
+//   {
+//     if (write(1, buffer, nbytes) != (unsigned int) nbytes)
+//     {
+//       ssh_channel_close(channel);
+//       ssh_channel_free(channel);
+//       return SSH_ERROR;
+//     }
+//     nbytes = ssh_channel_read(channel, buffer, sizeof(buffer), 0);
+//   }
  
-  if (nbytes < 0)
-  {
-    ssh_channel_close(channel);
-    ssh_channel_free(channel);
-    return SSH_ERROR;
-  }
+//   if (nbytes < 0)
+//   {
+//     ssh_channel_close(channel);
+//     ssh_channel_free(channel);
+//     return SSH_ERROR;
+//   }
  
-  ssh_channel_send_eof(channel);
-  ssh_channel_close(channel);
-  ssh_channel_free(channel);
+//   ssh_channel_send_eof(channel);
+//   ssh_channel_close(channel);
+//   ssh_channel_free(channel);
  
-  return SSH_OK;
-}
+//   return SSH_OK;
+// }
 
 int scp_write(ssh_session session)
 {
@@ -251,7 +252,7 @@ int scp_write(ssh_session session)
     ssh_scp_free(scp);
     return rc;
   }
- 
+  scp_helloworld(session, scp);
   ssh_scp_close(scp);
   ssh_scp_free(scp);
   return SSH_OK;
@@ -283,5 +284,40 @@ int scp_read(ssh_session session)
  
   ssh_scp_close(scp);
   ssh_scp_free(scp);
+  return SSH_OK;
+}
+
+
+int scp_helloworld(ssh_session session, ssh_scp scp)
+{
+  int rc;
+  const char *helloworld = "Hello, world!\n";
+  int length = strlen(helloworld);
+ 
+  rc = ssh_scp_push_directory(scp, "helloworld", 777);
+  if (rc != SSH_OK)
+  {
+    fprintf(stderr, "Can't create remote directory: %s\n",
+            ssh_get_error(session));
+    return rc;
+  }
+ 
+  rc = ssh_scp_push_file
+    (scp, "helloworld.txt", length, 777);
+  if (rc != SSH_OK)
+  {
+    fprintf(stderr, "Can't open remote file: %s\n",
+            ssh_get_error(session));
+    return rc;
+  }
+ 
+  rc = ssh_scp_write(scp, helloworld, length);
+  if (rc != SSH_OK)
+  {
+    fprintf(stderr, "Can't write to remote file: %s\n",
+            ssh_get_error(session));
+    return rc;
+  }
+ 
   return SSH_OK;
 }
