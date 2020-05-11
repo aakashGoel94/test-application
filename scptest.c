@@ -5,8 +5,7 @@
 
 // int main()
 // {
-// 	int verbosity = SSH_LOG_PROTOCOL;
-// 	int port = 22;
+// 	
 // 	int rc;
 
 // 	ssh_session my_ssh_session = ssh_new();
@@ -37,6 +36,8 @@ int scp_read(ssh_session session);
 int main()
 {
   ssh_session my_ssh_session;
+  int verbosity = SSH_LOG_PROTOCOL;
+  //int port = 22;
   int rc;
   char *password;
  
@@ -45,7 +46,10 @@ int main()
   if (my_ssh_session == NULL)
     exit(-1);
   ssh_options_set(my_ssh_session, SSH_OPTIONS_HOST, "localhost");
- 
+  ssh_options_set(my_ssh_session, SSH_OPTIONS_LOG_VERBOSITY, &verbosity);
+  //ssh_options_set(my_ssh_session, SSH_OPTIONS_PORT, &port);
+  
+
   // Connect to server
   rc = ssh_connect(my_ssh_session);
   if (rc != SSH_OK)
@@ -231,7 +235,7 @@ int scp_write(ssh_session session)
   int rc;
  
   scp = ssh_scp_new
-    (session, SSH_SCP_WRITE | SSH_SCP_RECURSIVE, ".");
+    (session, SSH_SCP_WRITE | SSH_SCP_RECURSIVE, "/home/aakash/Downloads");
   if (scp == NULL)
   {
     fprintf(stderr, "Error allocating scp session: %s\n",
